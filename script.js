@@ -317,7 +317,7 @@ displayTotal(currAcc, defFirstDate, defLastDate);
 
 /*
 TODO:
-0. GIT GIT GIT
+0. GIT GIT GIT GITTTTT
 1. Login event
 2. Category budget
 3. Date ragne valiation
