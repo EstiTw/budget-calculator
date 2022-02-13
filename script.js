@@ -8,13 +8,13 @@
 const account1 = {
   owner: 'Jonas Schmedtmann',
   category: [
-    'food',
-    'ride',
-    'toilet',
-    'cleaning',
-    'sport',
-    'resturants',
-    'bills',
+    'Food',
+    'Ride',
+    'Toilet',
+    'Cleaning',
+    'Sport',
+    'Resturants',
+    'Bills',
   ],
   budgets: [2000, 2050, 4000, 0, 0, 0, 0],
   expenses: [200, -450, -400, -3000, -650, -130, -70, -1300],
@@ -22,7 +22,7 @@ const account1 = {
     'food',
     'food',
     'ride',
-    'toilet_cleaning',
+    'cleaning',
     'ride',
     'food',
     'food',
@@ -106,12 +106,31 @@ const selectCategory = document.getElementById('categories');
 
 /////////////////////////////////////////////////
 
-// Helped function
+// Helper function
 
+//TODO: default parameters dates
 const updateUI = function (currAcc, first, last) {
+  last = last ? last : new Date();
+  let temp = new Date(last);
+  first = first ? first : new Date(temp.setMonth(last.getMonth() - 1));
+
   displayExpenses(currAcc, first, last);
   displayTotal(currAcc, first, last);
   showByCategories(currAcc, first, last);
+};
+
+const formatedCategory = function (category) {
+  const c = category
+    .split('_')
+    .map(c => c.replace(c[0], c[0].toUpperCase()))
+    .join(' ');
+
+  console.log(`c: ${c}`);
+  return c;
+};
+
+const toClassCategory = function (category) {
+  return category.toLowerCase().replaceAll(' ', '_');
 };
 
 const stringToDate = function (date) {
@@ -141,6 +160,7 @@ const generateColor = function () {
   return '#' + Math.floor(Math.random() * 16777215).toString(16);
 };
 
+////////////////////////////////////////////
 // Functions
 
 //TODO: add x day ago format
@@ -151,11 +171,14 @@ const displayExpenses = function (acc, first, last) {
   acc.expenses.forEach((exp, i) => {
     const currDate = new Date(acc.dates[i]);
     if (currDate > first && currDate < last) {
-      const category = acc.categories[i];
+      const classCategory = acc.categories[i];
+
       let date = dateToString(new Date(acc.dates[i]));
 
       const html = `<div class="expenses__row">
-    <div class="expenses__category expenses__category--${category}"> ${category}</div>
+    <div class="expenses__category expenses__category--${classCategory}"> ${formatedCategory(
+        classCategory
+      )}</div>
     <div class="expenses__date">${date}</div>
     <div class="expenses__value">${exp}€</div>
   </div>`;
@@ -182,30 +205,33 @@ const showByCategories = function (acc, first, last) {
 
   // Sum expenses wich in the dates range && same category
   acc.category.forEach((c, i) => {
+    const classCategory = toClassCategory(c);
     const categorySum = acc.expenses
       .filter((exp, j) => {
         const currDate = new Date(acc.dates[j]);
-        return currDate >= first && currDate <= last && acc.categories[j] === c;
+        return (
+          currDate >= first &&
+          currDate <= last &&
+          acc.categories[j] === classCategory
+        );
       })
       .reduce((sum, exp) => sum + exp, 0);
 
     // Date for HTML and CSS
-    const category = c;
-    console.log(category);
     const categoryBudget = acc.budgets[i];
     const categoryOut = categorySum ? categorySum : 0;
     const categoryRemain = categoryBudget + categoryOut;
-    const percentRemain =
-      categoryBudget == 0 ? 100 : (categoryRemain / categoryBudget) * 100;
+    let percentRemain =
+      categoryBudget == 0 ? 0 : (categoryRemain / categoryBudget) * 100;
 
     // Create HTML & CSS
     const html = `
     <div
-        class="expenses__category expenses__category--${category} category__row"
+        class="expenses__category expenses__category--${classCategory} category__row"
       >
-      ${category}
+      ${c}
       </div>
-    <div class="lineContainer  ${category}Line">
+    <div class="lineContainer  ${classCategory}Line">
           <div class="left"></div>
           <div class="right"></div>
         </div>
@@ -217,32 +243,34 @@ const showByCategories = function (acc, first, last) {
     </div>
     `;
 
-    const css = `.${category}Line .left{
-      width: ${percentRemain}% !important;
-        }`;
+    percentRemain = percentRemain <= 0 ? 0 : percentRemain;
 
     // Add css and HTML
+    const css = `.${classCategory}Line .left{
+      width: ${percentRemain}% !important;
+        }`;
     addCss(css);
     containerCategories.insertAdjacentHTML('afterbegin', html);
   });
 };
 
+///////////////////////////////////////////////
 // Event Handleres
 
-//TODO: adding detailes as option, block minus amount option
+//TODO: adding detailes as option
 btnExpense.addEventListener('click', function (e) {
   //// Prevent form from submitting
   e.preventDefault();
 
   const category = selectCategory.value;
-  const amount = inputExpenseAmount.value;
+  const amount = Math.abs(+inputExpenseAmount.value);
 
   // Adding the expense
-  if (category !== 'empty' && amount !== '') {
+  if (category !== 'empty' && amount !== 0) {
     const date = new Date().toISOString();
 
-    currAcc.expenses.push(-+amount);
-    currAcc.categories.push(category);
+    currAcc.expenses.push(-amount);
+    currAcc.categories.push(toClassCategory(category));
     currAcc.dates.push(date);
   }
 
@@ -252,34 +280,42 @@ btnExpense.addEventListener('click', function (e) {
   inputExpenseAmount.blur();
 
   // Update UI
-  updateUI(currAcc, defFirstDate, defLastDate);
+  updateUI(currAcc);
 });
 
-//TODO: category with two seperate word and more - add ass class without spaces
 btnCategory.addEventListener('click', function (e) {
   //// Prevent form from submitting
   e.preventDefault();
 
-  if (inputCategoryName.value !== '' && inputCategoryBudget.value !== '') {
+  const classCategory = toClassCategory(inputCategoryName.value);
+  const formatCategory = formatedCategory(classCategory);
+
+  //TODO: What if we whant 0 budget
+  if (
+    !currAcc.category.includes(formatedCategory) &&
+    inputCategoryName.value !== '' &&
+    +inputCategoryBudget.value > 0
+  ) {
     //Add option to selectCategory
     const option = document.createElement('option');
-    option.text = inputCategoryName.value;
+    option.text = formatCategory;
+    option.value = classCategory;
     selectCategory.add(option);
 
-    // Add option to account.category
+    // Add option and budget to account
     currAcc.category.push(option.text);
-
-    // Add budget to account.budgets
     currAcc.budgets.push(+inputCategoryBudget.value);
 
     //Add CSS
     const randomColor1 = generateColor();
     const randomColor2 = generateColor();
-    const css = `.expenses__category--${option.text} {
+    const css = `.expenses__category--${option.value} {
     background-image: linear-gradient(to top left, ${randomColor1}, ${randomColor2});
   }`;
-    console.log(css);
     addCss(css);
+
+    // Update UI
+    updateUI(currAcc);
   }
 
   // Clear input fields
@@ -298,6 +334,7 @@ btnRange.addEventListener('click', function (e) {
   const last = stringToDate(inputToDate.value);
 
   // Update UI by range
+  //TODO: Validation to dates and then
   updateUI(currAcc, first, last);
 
   // Clear input fields
@@ -306,30 +343,35 @@ btnRange.addEventListener('click', function (e) {
   inputToDate.blur();
 });
 
+/////////////////////////////////////////////
 // Default parameters and variables
 const currAcc = account1;
-const defFirstDate = stringToDate('01/01/1900');
-const defLastDate = stringToDate('01/01/2050');
 
-// Function Tests
-displayExpenses(account1, defFirstDate, defLastDate);
-displayTotal(currAcc, defFirstDate, defLastDate);
+///////////////////////////////////////////
+// // // Function Tests
+// displayExpenses(currAcc);
+// displayTotal(currAcc);
+// showByCategories(currAcc);
+updateUI(currAcc);
 
 /*
 TODO:
-0. GIT GIT GIT GITTTTT
+0. GIT GIT GIT GITTTTTT
 1. Login event
-2. Category budget
-3. Date ragne valiation
+2. Category budget - what if its set as zero
+3. Date ragne validation
 4. Categories by sum - UI
 5. Sort by Category/amount
 6. Summary down: month budget, out, restBudget
-7. Rounding (x.xx) and Shekel sign
+7. Rounding (x.xx) + Shekel sign
 8. Cheking selected value and value
 9. Editing Category Budget. e.g budget is per month
 10. Keep conclusion of month for diagram and statistics. working with DB
 11. Login and keep the information in DB
-12. Common budget
+12. Sharing budget
 13. Close account
-14. check if inputs are number
+14. check if inputs are number. Note: NaN type is "number" :D
 */
+
+const test = formatedCategory('bb_b');
+console.log(`test : ${test}`);
