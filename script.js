@@ -18,7 +18,7 @@ const account1 = {
     'Bills',
   ],
   budgets: [2000, 2050, 4000, 0, 0, 0, 0],
-  expenses: [-200, -450, -400, -3000, -650, -130, -70, -1300],
+  expenses: [-200.345, -450.244, -400, -3000.221, -650, -130, -70, -1300],
   categories: [
     'food',
     'food',
@@ -42,6 +42,7 @@ const account1 = {
   ],
   interestRate: 1.2, // %
   pin: 1111,
+  currency: 'USD',
 };
 
 const account2 = {
@@ -50,6 +51,7 @@ const account2 = {
   expenses: [5000, 3400, -150, -790, -3210, -1000, -8500, -30],
   interestRate: 1.5,
   pin: 2222,
+  currency: 'EUR',
 };
 
 const account3 = {
@@ -80,6 +82,7 @@ const account3 = {
   ],
   interestRate: 0.7,
   pin: 3333,
+  currency: 'ILS',
 };
 
 const account4 = {
@@ -88,6 +91,7 @@ const account4 = {
   expenses: [430, 1000, 700, 50, 90],
   interestRate: 1,
   pin: 4444,
+  currency: 'ILS',
 };
 
 const accounts = [account1, account2, account3, account4];
@@ -145,7 +149,14 @@ const updateUI = function (currAcc, first, last) {
   showByCategories(currAcc, first, last);
 };
 
-const formatedCategory = function (category) {
+const formattedCurrency = function (value, locale, currency) {
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: currency,
+  }).format(value);
+};
+
+const formattedCategory = function (category) {
   const c = category
     .split('_')
     .map(c => c.replace(c[0], c[0].toUpperCase()))
@@ -175,7 +186,7 @@ const dateToString = function (date) {
     .padStart(2, '0')}/${year}, ${hours}:${minutes}`;
 };
 
-const addCss = function (cssCode) {
+const addCSS = function (cssCode) {
   var style = document.createElement('style');
   style.innerHTML = cssCode;
   document.head.appendChild(style);
@@ -202,14 +213,15 @@ const displayExpenses = function (acc, first, last) {
       currDate.getTime() <= last.getTime()
     ) {
       const classCategory = acc.categories[i];
-      let date = dateToString(new Date(acc.dates[i]));
+      const date = dateToString(new Date(acc.dates[i]));
+      const formattedExp = formattedCurrency(exp, acc.locale, acc.currency);
 
       const html = `<div class="expenses__row">
-      <div class="expenses__category expenses__category--${classCategory}"> ${formatedCategory(
+      <div class="expenses__category expenses__category--${classCategory}"> ${formattedCategory(
         classCategory
       )}</div>
     <div class="expenses__date">${date}</div>
-    <div class="expenses__value">${exp}€</div>
+    <div class="expenses__value">${formattedExp}</div>
   </div>`;
 
       containerExpenses.insertAdjacentHTML('afterbegin', html);
@@ -220,12 +232,14 @@ const displayExpenses = function (acc, first, last) {
 //TODO: Combine reduce with filter
 const displayTotal = function (acc, first, last) {
   // Sum expenses wich in the dates range
-  labelTotal.textContent = acc.expenses
+  const total = acc.expenses
     .filter((exp, i) => {
       const currDate = new Date(acc.dates[i]);
       return currDate > first && currDate < last;
     })
-    .reduce((sum, exp) => sum + exp, 0);
+    .reduce((sum, exp) => sum + exp, 0)
+    .toFixed(2);
+  labelTotal.textContent = formattedCurrency(total, acc.locale, acc.currency);
 };
 
 const showByCategories = function (acc, first, last) {
@@ -266,9 +280,21 @@ const showByCategories = function (acc, first, last) {
         </div>
     <div class="category__row expenses__row">
       
-      <div class="expenses__value category__budget">${categoryBudget}</div>
-      <div class="expenses__value category__out">${categoryOut}</div>
-      <div class="expenses__value category__remain">${categoryRemain}</div>
+      <div class="expenses__value category__budget">${formattedCurrency(
+        categoryBudget.toFixed(2),
+        acc.locale,
+        acc.currency
+      )}</div>
+      <div class="expenses__value category__out">${formattedCurrency(
+        categoryOut.toFixed(2),
+        acc.locale,
+        acc.currency
+      )}</div>
+      <div class="expenses__value category__remain">${formattedCurrency(
+        categoryRemain.toFixed(2),
+        acc.locale,
+        acc.currency
+      )}</div>
     </div>
     `;
 
@@ -278,7 +304,7 @@ const showByCategories = function (acc, first, last) {
     const css = `.${classCategory}Line .left{
       width: ${percentRemain}% !important;
         }`;
-    addCss(css);
+    addCSS(css);
     containerCategories.insertAdjacentHTML('afterbegin', html);
   });
 };
@@ -289,21 +315,17 @@ const showByCategories = function (acc, first, last) {
 btnLogin.addEventListener('click', function (e) {
   e.preventDefault();
 
-  const user = inputLoginUsername.value;
-  const pass = inputLoginPin.value;
-  const accountIndex = accounts.findIndex(
-    acc => acc.username == user && acc.pin == pass
-  );
+  currAcc = accounts.find(acc => acc.username == inputLoginUsername.value);
 
   // Update UI if login details is currect
-  if (accountIndex > -1) {
-    currAcc = accounts[accountIndex];
+  if (currAcc?.pin == Number(inputLoginPin.value)) {
     labelDate.innerHTML = dateToString(new Date());
-    labelWelcome.innerHTML = `Welcome back ${currAcc.owner}!`;
-    //TODO: opacity
+    labelWelcome.innerHTML = `Welcome back, ${currAcc.owner.split(' ')[0]}!`;
+    containerApp.style.opacity = 100;
     updateUI(currAcc);
   }
-  // Clear inputs
+
+  // Clear inputs fields
   inputLoginUsername.value = inputLoginPin.value = '';
   inputLoginPin.blur();
 });
@@ -314,7 +336,8 @@ btnExpense.addEventListener('click', function (e) {
   e.preventDefault();
 
   const category = selectCategory.value;
-  const amount = Math.abs(+inputExpenseAmount.value);
+  let amount = Number(inputExpenseAmount.value).toFixed(2);
+  amount = Math.abs(+amount);
 
   // Adding the expense
   if (category !== 'empty' && amount !== 0) {
@@ -339,11 +362,11 @@ btnCategory.addEventListener('click', function (e) {
   e.preventDefault();
 
   const classCategory = toClassCategory(inputCategoryName.value);
-  const formatCategory = formatedCategory(classCategory);
+  const formatCategory = formattedCategory(classCategory);
 
   //TODO: What if we whant 0 budget
   if (
-    !currAcc.category.includes(formatedCategory) &&
+    !currAcc.category.includes(formattedCategory) &&
     inputCategoryName.value !== '' &&
     +inputCategoryBudget.value > 0
   ) {
@@ -355,7 +378,7 @@ btnCategory.addEventListener('click', function (e) {
 
     // Add option and budget to account
     currAcc.category.push(option.text);
-    currAcc.budgets.push(+inputCategoryBudget.value);
+    currAcc.budgets.push(+Number(inputCategoryBudget.value).toFixed(2));
 
     //Add CSS
     const randomColor1 = generateColor();
@@ -363,7 +386,7 @@ btnCategory.addEventListener('click', function (e) {
     const css = `.expenses__category--${option.value} {
     background-image: linear-gradient(to top left, ${randomColor1}, ${randomColor2});
   }`;
-    addCss(css);
+    addCSS(css);
 
     // Update UI
     updateUI(currAcc);
@@ -384,7 +407,7 @@ btnRange.addEventListener('click', function (e) {
   const last = stringToDate(inputToDate.value);
 
   // Validate the range and ERROR to the user
-  if (!(first.getTime() <= last.getTime)) {
+  if (!(first.getTime() <= last.getTime())) {
     //console.log('The RANGE DONT make SENSE');
     window.alert('The range is NOT valid');
   }
@@ -401,12 +424,6 @@ btnRange.addEventListener('click', function (e) {
 /////////////////////////////////////////////
 // Default parameters and variables
 let currAcc = account1;
-
-///////////////////////////////////////////
-// // // Function Tests
-// displayExpenses(currAcc);
-// displayTotal(currAcc);
-// showByCategories(currAcc);
 updateUI(currAcc);
 
 /*
