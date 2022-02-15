@@ -7,6 +7,7 @@
 // Data
 const account1 = {
   owner: 'Jonas Schmedtmann',
+  username: 'js',
   category: [
     'Food',
     'Ride',
@@ -17,7 +18,7 @@ const account1 = {
     'Bills',
   ],
   budgets: [2000, 2050, 4000, 0, 0, 0, 0],
-  expenses: [200, -450, -400, -3000, -650, -130, -70, -1300],
+  expenses: [-200, -450, -400, -3000, -650, -130, -70, -1300],
   categories: [
     'food',
     'food',
@@ -45,20 +46,45 @@ const account1 = {
 
 const account2 = {
   owner: 'Jessica Davis',
-  expenses: [5000, 3400, -150, -790, -3210, -1000, 8500, -30],
+  username: 'jd',
+  expenses: [5000, 3400, -150, -790, -3210, -1000, -8500, -30],
   interestRate: 1.5,
   pin: 2222,
 };
 
 const account3 = {
   owner: 'Steven Thomas Williams',
-  expenses: [200, -200, 340, -300, -20, 50, 400, -460],
+  username: 'stw',
+  expenses: [-200, -200, 340, -300, -20, -50, -400, -460],
+  category: ['Ride', 'Toilet', 'Cleaning', 'Sport', 'Resturants', 'Bills'],
+  budgets: [1000, 2050, 4000, 1000, 350, 0],
+  categories: [
+    'ride',
+    'ride',
+    'cleaning',
+    'cleaning',
+    'ride',
+    'resturants',
+    'ride',
+    'toilet',
+  ],
+  dates: [
+    '2021-01-25T12:44:08.747Z',
+    '2021-02-25T12:44:07.747Z',
+    '2021-03-25T12:44:07.747Z',
+    '2021-04-25T12:44:07.747Z',
+    '2021-05-25T13:44:07.747Z',
+    '2022-01-25T12:44:07.747Z',
+    '2022-01-25T12:44:07.747Z',
+    '2022-01-25T12:44:07.747Z',
+  ],
   interestRate: 0.7,
   pin: 3333,
 };
 
 const account4 = {
   owner: 'Sarah Smith',
+  username: 'ss',
   expenses: [430, 1000, 700, 50, 90],
   interestRate: 1,
   pin: 4444,
@@ -106,7 +132,7 @@ const selectCategory = document.getElementById('categories');
 
 /////////////////////////////////////////////////
 
-// Helper function
+// Helper functions
 
 //TODO: default parameters dates
 const updateUI = function (currAcc, first, last) {
@@ -125,7 +151,6 @@ const formatedCategory = function (category) {
     .map(c => c.replace(c[0], c[0].toUpperCase()))
     .join(' ');
 
-  console.log(`c: ${c}`);
   return c;
 };
 
@@ -134,14 +159,14 @@ const toClassCategory = function (category) {
 };
 
 const stringToDate = function (date) {
-  const d = date.split('/');
-  return new Date(d[2], +d[1] - 1, +d[0]);
+  const d = date.split('-');
+  return new Date(d[0], +d[1] - 1, +d[2]);
 };
 
 const dateToString = function (date) {
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
-  const day = date.getDate() + 1;
+  const day = date.getDate();
   const hours = date.getHours();
   const minutes = date.getMinutes();
 
@@ -170,13 +195,17 @@ const displayExpenses = function (acc, first, last) {
   // Add to the Sammary
   acc.expenses.forEach((exp, i) => {
     const currDate = new Date(acc.dates[i]);
-    if (currDate > first && currDate < last) {
-      const classCategory = acc.categories[i];
 
+    //add expense if exp is in range
+    if (
+      currDate.getTime() >= first.getTime() &&
+      currDate.getTime() <= last.getTime()
+    ) {
+      const classCategory = acc.categories[i];
       let date = dateToString(new Date(acc.dates[i]));
 
       const html = `<div class="expenses__row">
-    <div class="expenses__category expenses__category--${classCategory}"> ${formatedCategory(
+      <div class="expenses__category expenses__category--${classCategory}"> ${formatedCategory(
         classCategory
       )}</div>
     <div class="expenses__date">${date}</div>
@@ -257,6 +286,28 @@ const showByCategories = function (acc, first, last) {
 ///////////////////////////////////////////////
 // Event Handleres
 
+btnLogin.addEventListener('click', function (e) {
+  e.preventDefault();
+
+  const user = inputLoginUsername.value;
+  const pass = inputLoginPin.value;
+  const accountIndex = accounts.findIndex(
+    acc => acc.username == user && acc.pin == pass
+  );
+
+  // Update UI if login details is currect
+  if (accountIndex > -1) {
+    currAcc = accounts[accountIndex];
+    labelDate.innerHTML = dateToString(new Date());
+    labelWelcome.innerHTML = `Welcome back ${currAcc.owner}!`;
+    //TODO: opacity
+    updateUI(currAcc);
+  }
+  // Clear inputs
+  inputLoginUsername.value = inputLoginPin.value = '';
+  inputLoginPin.blur();
+});
+
 //TODO: adding detailes as option
 btnExpense.addEventListener('click', function (e) {
   //// Prevent form from submitting
@@ -324,7 +375,6 @@ btnCategory.addEventListener('click', function (e) {
   inputCategoryBudget.blur();
 });
 
-// TODO: dates input validation
 btnRange.addEventListener('click', function (e) {
   //// Prevent form from submitting
   e.preventDefault();
@@ -333,8 +383,13 @@ btnRange.addEventListener('click', function (e) {
   const first = stringToDate(inputFromDate.value);
   const last = stringToDate(inputToDate.value);
 
+  // Validate the range and ERROR to the user
+  if (!(first.getTime() <= last.getTime)) {
+    //console.log('The RANGE DONT make SENSE');
+    window.alert('The range is NOT valid');
+  }
+
   // Update UI by range
-  //TODO: Validation to dates and then
   updateUI(currAcc, first, last);
 
   // Clear input fields
@@ -345,7 +400,7 @@ btnRange.addEventListener('click', function (e) {
 
 /////////////////////////////////////////////
 // Default parameters and variables
-const currAcc = account1;
+let currAcc = account1;
 
 ///////////////////////////////////////////
 // // // Function Tests
@@ -359,10 +414,10 @@ TODO:
 0. GIT GIT GIT GITTTTTT
 1. Login event
 2. Category budget - what if its set as zero
-3. Date ragne validation
+3. Date ragne validation DONE  
 4. Categories by sum - UI
 5. Sort by Category/amount
-6. Summary down: month budget, out, restBudget
+6. Summary down: monthly budget, out, restBudget
 7. Rounding (x.xx) + Shekel sign
 8. Cheking selected value and value
 9. Editing Category Budget. e.g budget is per month
@@ -372,6 +427,3 @@ TODO:
 13. Close account
 14. check if inputs are number. Note: NaN type is "number" :D
 */
-
-const test = formatedCategory('bb_b');
-console.log(`test : ${test}`);
