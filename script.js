@@ -129,6 +129,7 @@ const inputToDate = document.querySelector('.form__input--to');
 const inputCloseUsername = document.querySelector('.form__input--user');
 const inputClosePin = document.querySelector('.form__input--pin');
 const selectCategory = document.getElementById('categories');
+const selectRange = document.getElementById('last');
 
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////
@@ -269,33 +270,41 @@ const showByCategories = function (acc, first, last) {
 
     // Create HTML & CSS
     const html = `
-    <div
-        class="expenses__category expenses__category--${classCategory} category__row"
-      >
-      ${c}
-      </div>
-    <div class="lineContainer  ${classCategory}Line">
-          <div class="left"></div>
-          <div class="right"></div>
+    <div class="category__row">
+
+      <div class="category__line">
+        <div
+          class="expenses__category expenses__category--${classCategory} category__row"
+        >
+        ${c}
         </div>
-    <div class="category__row expenses__row">
+        <div class="lineContainer  ${classCategory}Line">
+            <div class="left"></div>
+            <div class="right"></div>
+        </div>
+    </div>
+       
+    <div class="category__info">
+    <div class="category__remain">${formattedCurrency(
+      categoryRemain.toFixed(2),
+      acc.locale,
+      acc.currency
+    )}</div>
       
-      <div class="expenses__value category__budget">${formattedCurrency(
-        categoryBudget.toFixed(2),
-        acc.locale,
-        acc.currency
-      )}</div>
-      <div class="expenses__value category__out">${formattedCurrency(
+      <div class="category__out">${formattedCurrency(
         categoryOut.toFixed(2),
         acc.locale,
         acc.currency
       )}</div>
-      <div class="expenses__value category__remain">${formattedCurrency(
-        categoryRemain.toFixed(2),
+      <div class="category__budget">${formattedCurrency(
+        categoryBudget.toFixed(2),
         acc.locale,
         acc.currency
       )}</div>
-    </div>
+      
+   </div>
+  </div>
+
     `;
 
     percentRemain = percentRemain <= 0 ? 0 : percentRemain;
@@ -429,13 +438,13 @@ updateUI(currAcc);
 /*
 TODO:
 0. GIT GIT GIT GITTTTTT
-1. Login event
+1. Login event DONE
 2. Category budget - what if its set as zero
 3. Date ragne validation DONE  
 4. Categories by sum - UI
 5. Sort by Category/amount
 6. Summary down: monthly budget, out, restBudget
-7. Rounding (x.xx) + Shekel sign
+7. Rounding (x.xx) + Shekel sign DONE
 8. Cheking selected value and value
 9. Editing Category Budget. e.g budget is per month
 10. Keep conclusion of month for diagram and statistics. working with DB
@@ -443,4 +452,5 @@ TODO:
 12. Sharing budget
 13. Close account
 14. check if inputs are number. Note: NaN type is "number" :D
+15. show by: las 3 month, last half year, last year
 */

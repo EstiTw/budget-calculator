@@ -49,6 +49,26 @@
       <!-- CATEGORIES CONCLUSION -->
 
       <div class="conclusion">
+        <div class="category__row">
+          <div class="category__line">
+            <div
+              class="expenses__category expenses__category--food category__row"
+            >
+              Food
+            </div>
+            <div class="lineContainer ${classCategory}Line">
+              <div class="left"></div>
+              <div class="right"></div>
+            </div>
+          </div>
+
+          <div class="category__info">
+            <div class="category__remain">200</div>
+            <div class="category__out">150</div>
+            <div class="category__budget">350</div>
+          </div>
+        </div>
+
         <div class="category__row expenses__row">
           <div class="expenses__category expenses__category--food">2 food</div>
           <div class="expenses__value category__budget">budget</div>
@@ -61,10 +81,6 @@
           <div class="expenses__value category__budget">budget</div>
           <div class="expenses__value category__out">out</div>
           <div class="expenses__value category__remain">remain</div>
-        </div>
-        <div class="lineContainer categoryLine">
-          <div class="left"></div>
-          <div class="right"></div>
         </div>
       </div>
 
@@ -107,7 +123,13 @@
         <!-- OPERATION: RANGE -->
         <div class="operation operation--range">
           <h2>Show by range</h2>
-          <form class="form form--ragne">
+          <form class="form form--range">
+            <select name="last" id="last">
+              <option value="empty"></option>
+              <option value="last-three-month">Last 3 month</option>
+              <option value="last-half-year">Last half year</option>
+              <option value="last-year">Last year</option>
+            </select>
             <input type="date" class="form__input form__input--from" />
             <input type="date" class="form__input form__input--to" />
             <button class="form__btn form__btn--range">&rarr;</button>
